@@ -6,6 +6,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import proj.w41k4z.helpers.DateHelper;
 import proj.w41k4z.helpers.StringHelper;
@@ -16,55 +19,34 @@ import proj.w41k4z.helpers.StringHelper;
  */
 public class JavaClass {
 
-    private Class<?> javaClass;
-
     /**
-     * Default constructor.
+     * Returns all methods annotated with the given annotation class(es).
+     * 
+     * @param javaClass         the java class.
+     * @param annotationClasses the annotation class(es).
+     * @return all methods annotated with the given annotation class(es).
      */
-    public JavaClass() {
+    @SafeVarargs
+    public static Method[] getMethodByAnnotation(Class<?> javaClass, Class<? extends Annotation>... annotationClasses) {
+        List<Method> methods = Arrays.stream(javaClass.getMethods())
+                .filter(method -> Arrays.stream(annotationClasses).anyMatch(method::isAnnotationPresent))
+                .collect(Collectors.toList());
+        return methods.toArray(new Method[0]);
     }
 
     /**
-     * Constructor with the class type parameter.
+     * Returns all fields annotated with the given annotation class(es).
      * 
-     * @param javaClass the java class to be set.
+     * @param javaClass         the java class.
+     * @param annotationClasses the annotation class(es).
+     * @return all fields annotated with the given annotation class(es).
      */
-    public JavaClass(Class<?> javaClass) {
-        this.setJavaClass(javaClass);
-    }
-
-    /**
-     * Set the Class object field attached to this object.
-     * 
-     * @param javaClass
-     */
-    public void setJavaClass(Class<?> javaClass) {
-        this.javaClass = javaClass;
-    }
-
-    /**
-     * Returns the Class object field attached to this object.
-     * 
-     * @return the Class object
-     */
-    public Class<?> getJavaClass() {
-        return this.javaClass;
-    }
-
-    /**
-     * Returns all methods annotated with the given annotation class.
-     * 
-     * @param annotationClass the annotation class.
-     * @return all methods annotated with the given annotation class.
-     */
-    public Method[] getMethodByAnnotation(Class<? extends Annotation> annotationClass) {
-        ArrayList<Method> methods = new ArrayList<>();
-        for (Method method : this.getJavaClass().getMethods()) {
-            if (method.isAnnotationPresent(annotationClass)) {
-                methods.add(method);
-            }
-        }
-        return methods.toArray(new Method[methods.size()]);
+    @SafeVarargs
+    public static Field[] getFieldByAnnotation(Class<?> javaClass, Class<? extends Annotation>... annotationClasses) {
+        List<Field> fields = Arrays.stream(javaClass.getDeclaredFields())
+                .filter(field -> Arrays.stream(annotationClasses).anyMatch(field::isAnnotationPresent))
+                .collect(Collectors.toList());
+        return fields.toArray(new Field[0]);
     }
 
     /**
@@ -82,6 +64,9 @@ public class JavaClass {
      */
     public static void setObjectFieldValue(Object object, Object data, Field field)
             throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        if (data == null) {
+            throw new NullPointerException("The data to set cannot be null. Field: " + field.getName());
+        }
         if (data.getClass().isArray() && data.getClass().getComponentType().isArray()) {
             throw new IllegalArgumentException("Multidimensional arrays are not supported");
         }
