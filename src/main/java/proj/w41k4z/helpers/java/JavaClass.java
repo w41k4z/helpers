@@ -82,6 +82,25 @@ public class JavaClass {
 
     }
 
+    /**
+     * Returns the value of the given field for the given object.
+     * 
+     * @param object the object to get the field value from.
+     * @param field  the field to get the value for.
+     * @return the value of the given field for the given object.
+     * @throws SecurityException         if the field is not accessible.
+     * @throws NoSuchMethodException     if the field has no getter (following the
+     *                                   java naming convention)
+     * @throws InvocationTargetException if the getter throws an exception
+     * @throws IllegalArgumentException  if the getter is not public
+     * @throws IllegalAccessException    if the getter is not public
+     */
+    public static Object getObjectFieldValue(Object object, Field field) throws NoSuchMethodException,
+            SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+        Method getter = object.getClass().getMethod(StringHelper.toCamelCase("get", field.getName()));
+        return getter.invoke(object);
+    }
+
     private static void setNormalFieldValue(Object object, Object data, Field field, Method setter)
             throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         Object castedData = null;
