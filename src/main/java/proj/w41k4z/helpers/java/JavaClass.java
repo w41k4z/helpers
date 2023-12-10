@@ -1,6 +1,7 @@
 package proj.w41k4z.helpers.java;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -60,9 +61,12 @@ public class JavaClass {
      *                                   java naming convention)
      * @throws InvocationTargetException if the setter throws an exception
      * @throws IllegalAccessException    if the setter is not public
+     * @throws InstantiationException    if the field cannot be instantiated
+     * @throws IllegalArgumentException  if the setter is not public
      */
     public static void setObjectFieldValue(Object object, Object data, Field field)
-            throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+            throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, IllegalArgumentException,
+            InstantiationException {
         if (data == null) {
             throw new NullPointerException("The data to set cannot be null. Field: " + field.getName());
         }
@@ -96,26 +100,29 @@ public class JavaClass {
      * @throws IllegalAccessException    if the getter is not public
      */
     public static Object getObjectFieldValue(Object object, Field field) throws NoSuchMethodException,
-            SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+            IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         Method getter = object.getClass().getMethod(StringHelper.toCamelCase("get", field.getName()));
         return getter.invoke(object);
     }
 
     private static void setNormalFieldValue(Object object, Object data, Field field, Method setter)
-            throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+            throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, InstantiationException,
+            SecurityException {
         Object castedData = null;
         if (field.getType().isArray()) {
-            for (Object element : (Object[]) data) {
+            Object[] array = (Object[]) data;
+            Object[] castedArray = (Object[]) Array.newInstance(field.getType().getComponentType(), array.length);
+            for (int i = 0; i < array.length; i++) {
                 try {
                     // Basic type : INTEGER, STRING, BOOLEAN, DOUBLE, FLOAT, LONG, SHORT, BYTE
-                    element = field.getType().getComponentType().getConstructor(String.class)
-                            .newInstance(element.toString());
-                } catch (Exception e) {
+                    castedArray[i] = field.getType().getComponentType().getConstructor(String.class)
+                            .newInstance(array[i].toString());
+                } catch (NoSuchMethodException e) {
                     // This means that the data is not an array of primitive type.
-                    break;
+                    castedArray[i] = field.getType().getComponentType().cast(array[i]);
                 }
             }
-            castedData = data;
+            castedData = castedArray;
         } else {
             try {
                 // Basic type : INTEGER, STRING, BOOLEAN, DOUBLE, FLOAT, LONG, SHORT, BYTE
@@ -133,20 +140,23 @@ public class JavaClass {
         Object castedData = null;
         String[] temporalFormats = DateHelper.getSupportedPatterns(field);
         if (field.getType().isArray()) {
-            for (Object element : (Object[]) data) {
-                for (int i = 0; i < temporalFormats.length; i++) {
+            Object[] array = (Object[]) data;
+            Object[] castedArray = (Object[]) Array.newInstance(field.getType().getComponentType(), array.length);
+            for (int i = 0; i < array.length; i++) {
+                for (int j = 0; j < temporalFormats.length; j++) {
                     try {
-                        element = DateHelper.format(field.getType().getComponentType(), element.toString().trim(),
-                                temporalFormats[i]);
+                        castedArray[i] = DateHelper.format(field.getType().getComponentType(),
+                                array[j].toString().trim(),
+                                temporalFormats[j]);
                         break;
                     } catch (ParseException e) {
-                        if (i == temporalFormats.length - 1) {
+                        if (j == temporalFormats.length - 1) {
                             throw new IllegalArgumentException("The temporal format is not supported");
                         }
                     }
                 }
             }
-            castedData = data;
+            castedData = castedArray;
         } else {
             for (int i = 0; i < temporalFormats.length; i++) {
                 try {

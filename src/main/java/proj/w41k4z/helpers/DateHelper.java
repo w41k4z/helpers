@@ -24,6 +24,11 @@ public class DateHelper {
      *         default
      *         temporal format if the element is not annotated
      *         with @TemporalPattern.
+     * 
+     * @throws NoSuchMethodException     if the annotated element has no getType
+     *                                   method.
+     * @throws IllegalAccessException    if the getType method is not accessible.
+     * @throws InvocationTargetException if the getType method throws an exception.
      */
     public static String[] getSupportedPatterns(AnnotatedElement temporalElement)
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
